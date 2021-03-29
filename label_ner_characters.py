@@ -1,10 +1,11 @@
 import os
 from tkinter import *
 from tkinter import ttk
+import re
 
 root = Tk()
 root.title('Label coordinate')
-root.geometry('420x310')
+root.geometry('500x310')
 
 # # Define dataset path and labels here
 # label_folder = './data/training/cursor/seq_01/'
@@ -32,28 +33,32 @@ def select_all(event):
     return 'break'
 
 def get_sent_label(sent_idx):
-	if not os.path.exists('./labels/{}.txt'.format(str(sent_idx))):
-		with open('./labels/{}.txt'.format(str(sent_idx)), 'w+') as f:
-			f.close()
-	with open('./labels/{}.txt'.format(str(sent_idx)), 'r') as f:
-		l = f.read()
-		f.close()
-	return l
+    if not os.path.exists('./labels/{}.txt'.format(str(sent_idx))):
+        with open('./labels/{}.txt'.format(str(sent_idx)), 'w+') as f:
+            f.close()
+    with open('./labels/{}.txt'.format(str(sent_idx)), 'r') as f:
+        l = f.read()
+        f.close()
+    if len(l) < len(sentences[sent_idx]):
+        l = l + '0'*(len(sentences[sent_idx]) - len(l))
+    elif len(l) > len(sentences[sent_idx]):
+        l = l[:len(sentences[sent_idx])]
+    return l
 
 def load_sentence(sent, sent_label=''):
     global sentence_frame, label_vars
 
     if sent_label == '':
-    	sent_label = [0]*len(sent)
+        sent_label = [0]*len(sent)
 
-    load = list(current_sentence)
+    load = list(sent)
 
-    sentence_frame = Frame(height=285, width=420, bg='green')
+    sentence_frame = Frame(height=285, width=500, bg='green')
     sentence_frame.grid(row=0, column=0)
     sentence_frame.grid_propagate(False)
     label_vars = []
 
-    print(current_sentence)
+    print(sent)
     print(load)
     row = 0
     column = 0
@@ -81,7 +86,7 @@ def load_sentence(sent, sent_label=''):
 def render_sentence_holder(parent):
     global current_sentence, label_vars
 
-    label_vars = load_sentence(current_sentence)
+    label_vars = load_sentence(sent=current_sentence, sent_label=get_sent_label(sentence_index))
 
     progress_frame = Frame(parent)
     progress_frame.grid(row=1, column=0)
@@ -95,14 +100,21 @@ def render_sentence_holder(parent):
 def next_sent():
     global sentence_index, sentences, current_sentence, sentence_frame, label_vars
     global progress_lbl
+
+    with open('./labels/{}.txt'.format(str(sentence_index)), 'w+') as f:
+        for v in label_vars:
+            l = v.get(1.0, END).strip()
+            # Check valid label
+            try:
+                int(l)
+            except ValueError:
+                l = re.sub('[a-zA-Z]', '', l)
+            f.write(l)
+        f.close()
+
     sentence_index += 1
-    if sentence_index < len(sentences):
-        with open('./labels/{}.txt'.format(str(sentence_index-1)), 'w+') as f:
-            for v in label_vars:
-                l = v.get(1.0, END).strip()
-                f.write(l)
-            f.close()
-        
+
+    if sentence_index < len(sentences):        
         current_sentence = sentences[sentence_index]
         for widget in sentence_frame.winfo_children():
             widget.destroy()
@@ -149,7 +161,7 @@ with open('sentences.txt', 'r') as f:
 print('Got total {} sentences'.format(len(sentences)))
 
 if not os.path.exists('./labels'):
-	os.mkdir('labels')
+    os.mkdir('labels')
 
 current_sentence = sentences[sentence_index]
 sent_lbl = None
