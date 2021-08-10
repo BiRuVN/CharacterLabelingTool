@@ -154,7 +154,7 @@ def key_stroke(event):
 sentences = []
 sentence_index = 0
 
-with open('sentences.txt', 'r') as f:
+with open('sentences.txt', 'r', encoding="utf8") as f:
     sentences = [x.strip() for x in f.read().split('\n')]
     f.close()
 
